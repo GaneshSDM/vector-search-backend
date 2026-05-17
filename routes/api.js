@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { embedText } = require('../services/embedding');
-const { storeDocument, searchSimilar } = require('../services/supabase');
+import { embedText } from '../services/embedding.js';
+import { storeDocument, searchSimilar } from '../services/supabase.js';
 
 /**
  * POST /api/embed
@@ -60,4 +60,4 @@ router.get('/health', (_req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
 
-module.exports = router;
+export default router;

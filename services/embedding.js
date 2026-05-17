@@ -1,5 +1,4 @@
-const { pipeline } = require('@xenova/transformers');
-
+let pipeline = null;
 let embedder = null;
 
 /**
@@ -9,6 +8,10 @@ let embedder = null;
 async function getEmbedder() {
   if (!embedder) {
     console.log('[embedding] Loading model: Xenova/all-MiniLM-L6-v2 ...');
+    if (!pipeline) {
+      const transformers = await import('@xenova/transformers');
+      pipeline = transformers.pipeline;
+    }
     embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
     console.log('[embedding] Model loaded.');
   }
@@ -36,4 +39,4 @@ async function embedBatch(texts) {
   return embeddings;
 }
 
-module.exports = { embedText, embedBatch };
+export { embedText, embedBatch };
