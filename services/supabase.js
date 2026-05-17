@@ -1,17 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let _supabase = null;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('[supabase] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set.');
+function getSupabase() {
+  if (!_supabase) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('[supabase] SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set to use this endpoint.');
+    }
+
+    _supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
+  }
+  return _supabase;
 }
-
-const supabase = createClient(
-  supabaseUrl || '',
-  supabaseServiceKey || '',
-  { auth: { persistSession: false } }
-);
 
 /**
  * Store a document embedding in the documents table.
@@ -19,6 +24,7 @@ const supabase = createClient(
  */
 async function storeDocument({ content, embedding, metadata = {} }) {
   const formattedEmbedding = `[${embedding.join(',')}]`;
+  const supabase = getSupabase();
 
   const { data, error } = await supabase
     .from('documents')
@@ -42,6 +48,7 @@ async function storeDocument({ content, embedding, metadata = {} }) {
  */
 async function searchSimilar(embedding, { limit = 10, threshold = 0.5 } = {}) {
   const formattedEmbedding = `[${embedding.join(',')}]`;
+  const supabase = getSupabase();
 
   const { data, error } = await supabase.rpc('match_documents', {
     query_embedding: formattedEmbedding,
@@ -111,6 +118,7 @@ async function runSetup() {
     .filter((s) => s.length > 0);
 
   for (const statement of statements) {
+    const supabase = getSupabase();
     const { error } = await supabase.rpc('exec_sql', { sql: statement }).maybeSingle();
     if (error) {
       // If exec_sql not available, log the SQL for manual execution
@@ -124,4 +132,4 @@ async function runSetup() {
   return true;
 }
 
-export { supabase, storeDocument, searchSimilar, runSetup };
+export { storeDocument, searchSimilar, runSetup };
